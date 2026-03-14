@@ -27,12 +27,6 @@ keymap("n", "<m-Right>", ":vertical resize +2<CR>", opts)
 keymap("n", "<S-j>", "<cmd>lua require('neoscroll').scroll(vim.wo.scroll, {move_cursor = true, duration = 200})<cr>", opts)
 keymap("n", "<S-k>", "<cmd>lua require('neoscroll').scroll(-vim.wo.scroll, {move_cursor = true, duration = 200})<cr>", opts)
 
--- Harpoon
-keymap("n", "<m-k>", "<cmd>lua require('harpoon.ui').nav_prev()<cr>", opts)
-keymap("n", "<m-j>", "<cmd>lua require('harpoon.ui').nav_next()<cr>", opts)
-keymap("n", "<leader>H", "<cmd>lua require('harpoon.ui').toggle_quick_menu()<cr>", opts)
-keymap("n", "<leader><tab>", "<cmd>lua require('harpoon.mark').add_file()<cr>", opts)
-
 -- Navigate buffers
 keymap("n", "<leader><Backspace>", ":Bdelete! %<CR>", opts)
 
