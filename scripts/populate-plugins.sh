@@ -28,7 +28,7 @@ clone_plugin() {
   git -C "$tmpdir" checkout --quiet "$ref"
 
   mkdir -p "$dest"
-  for dir in lua plugin after ftplugin syntax queries rplugin; do
+  for dir in lua plugin after ftplugin syntax queries rplugin colors autoload indent; do
     if [ -d "$tmpdir/$dir" ]; then
       cp -r "$tmpdir/$dir" "$dest/"
     fi
