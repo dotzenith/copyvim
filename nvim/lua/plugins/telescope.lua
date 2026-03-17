@@ -1,69 +1,72 @@
-local actions = require("telescope.actions")
-local opts = { noremap = true, silent = true }
+local pick  = require("mini.pick")
+local extra = require("mini.extra")
 
--- Telescope keymaps (descriptions registered in whichkey.lua / mini.clue)
-vim.keymap.set("n", "<leader>fb",  "<cmd>Telescope buffers previewer=false<cr>",                             vim.tbl_extend("force", opts, { desc = "Show Buffers" }))
-vim.keymap.set("n", "<leader>fgb", "<cmd>Telescope git_branches<cr>",                                        vim.tbl_extend("force", opts, { desc = "Checkout branch" }))
-vim.keymap.set("n", "<leader>fd",  "<cmd>Telescope diagnostics<cr>",                                         vim.tbl_extend("force", opts, { desc = "Diagnostics" }))
-vim.keymap.set("n", "<leader>ff",  "<cmd>Telescope find_files<cr>",                                          vim.tbl_extend("force", opts, { desc = "Find Files" }))
-vim.keymap.set("n", "<leader>fh",  "<cmd>Telescope help_tags<cr>",                                           vim.tbl_extend("force", opts, { desc = "Help" }))
-vim.keymap.set("n", "<leader>fo",  "<cmd>Telescope oldfiles<cr>",                                            vim.tbl_extend("force", opts, { desc = "Recent File" }))
-vim.keymap.set("n", "<leader>fp",  "<cmd>lua require('telescope').extensions.projects.projects()<cr>",       vim.tbl_extend("force", opts, { desc = "Projects" }))
-vim.keymap.set("n", "<leader>fr",  "<cmd>Telescope lsp_references<cr>",                                      vim.tbl_extend("force", opts, { desc = "References" }))
-vim.keymap.set("n", "<leader>ft",  "<cmd>Telescope live_grep<cr>",                                           vim.tbl_extend("force", opts, { desc = "Find Text" }))
-
-require("telescope").setup({
-  defaults = {
-    prompt_prefix = " ",
-    selection_caret = " ",
-    entry_prefix = "   ",
-    initial_mode = "insert",
-    selection_strategy = "reset",
-    path_display = { "smart" },
-    color_devicons = true,
-    vimgrep_arguments = {
-      "rg",
-      "--color=never",
-      "--no-heading",
-      "--with-filename",
-      "--line-number",
-      "--column",
-      "--smart-case",
-      "--hidden",
-      "--glob=!.git/",
-    },
-
-    mappings = {
-      i = {
-        ["<C-n>"] = actions.cycle_history_next,
-        ["<C-p>"] = actions.cycle_history_prev,
-        ["<C-j>"] = actions.move_selection_next,
-        ["<C-k>"] = actions.move_selection_previous,
-      },
-      n = {
-        ["<esc>"] = actions.close,
-        ["j"]     = actions.move_selection_next,
-        ["k"]     = actions.move_selection_previous,
-        ["q"]     = actions.close,
-      },
-    },
+pick.setup({
+  mappings = {
+    -- Match the old telescope navigation keys
+    move_down = "<C-j>",
+    move_up   = "<C-k>",
   },
-
-  pickers = {
-    live_grep = { theme = "dropdown" },
-    grep_string = { theme = "dropdown" },
-    find_files = { theme = "dropdown", previewer = false },
-    buffers = {
-      theme = "dropdown",
-      previewer = false,
-      initial_mode = "normal",
-      mappings = {
-        i = { ["<C-d>"] = actions.delete_buffer },
-        n = { ["dd"]    = actions.delete_buffer },
-      },
-    },
-    colorscheme = { enable_preview = true },
-    lsp_references  = { initial_mode = "normal" },
-    lsp_definitions = { initial_mode = "normal" },
+  options = {
+    use_cache = false,
+  },
+  window = {
+    -- Centered dropdown-style window (mirrors telescope's dropdown theme)
+    config = function()
+      local lines = vim.o.lines
+      local cols  = vim.o.columns
+      local height = math.min(math.floor(lines * 0.4), 20)
+      local width  = math.min(math.floor(cols  * 0.6), 90)
+      return {
+        anchor = "NW",
+        height = height,
+        width  = width,
+        row    = math.floor((lines - height) / 2),
+        col    = math.floor((cols  - width)  / 2),
+        border = "rounded",
+      }
+    end,
   },
 })
+
+-- Custom projects picker: reads project.nvim's recent project list directly
+local function pick_projects()
+  local ok, project_nvim = pcall(require, "project_nvim")
+  if not ok then
+    vim.notify("project_nvim not available", vim.log.levels.WARN)
+    return
+  end
+  local projects = project_nvim.get_recent_projects()
+  -- Most recent first
+  local items = {}
+  for i = #projects, 1, -1 do
+    table.insert(items, projects[i])
+  end
+  pick.start({
+    source = {
+      items  = items,
+      name   = "Projects",
+      choose = function(item)
+        vim.cmd("cd " .. vim.fn.fnameescape(item))
+        pick.builtin.files()
+      end,
+    },
+  })
+end
+
+local opts = { noremap = true, silent = true }
+
+vim.keymap.set("n", "<leader>ff",  pick.builtin.files,      vim.tbl_extend("force", opts, { desc = "Find Files" }))
+vim.keymap.set("n", "<leader>ft",  pick.builtin.grep_live,  vim.tbl_extend("force", opts, { desc = "Find Text" }))
+vim.keymap.set("n", "<leader>fb",  pick.builtin.buffers,    vim.tbl_extend("force", opts, { desc = "Show Buffers" }))
+vim.keymap.set("n", "<leader>fh",  pick.builtin.help,       vim.tbl_extend("force", opts, { desc = "Help" }))
+
+vim.keymap.set("n", "<leader>fo",  function() extra.pickers.oldfiles() end,
+  vim.tbl_extend("force", opts, { desc = "Recent File" }))
+vim.keymap.set("n", "<leader>fgb", function() extra.pickers.git_branches() end,
+  vim.tbl_extend("force", opts, { desc = "Checkout branch" }))
+vim.keymap.set("n", "<leader>fd",  function() extra.pickers.diagnostic({ scope = "all" }) end,
+  vim.tbl_extend("force", opts, { desc = "Diagnostics" }))
+vim.keymap.set("n", "<leader>fr",  function() extra.pickers.lsp({ scope = "references" }) end,
+  vim.tbl_extend("force", opts, { desc = "References" }))
+vim.keymap.set("n", "<leader>fp",  pick_projects,           vim.tbl_extend("force", opts, { desc = "Projects" }))

@@ -1,4 +1,4 @@
-require("project_nvim").setup {
+require("project_nvim").setup({
   active = true,
   on_config_done = nil,
   manual_mode = false,
@@ -9,9 +9,25 @@ require("project_nvim").setup {
   show_hidden = false,
   silent_chdir = true,
   scope_chdir = "global",
-}
+})
 
-local opts = { noremap = true, silent = true }
-local keymap = vim.api.nvim_set_keymap
-
-keymap("n", "<c-p>", ":lua require('telescope').extensions.projects.projects()<CR>", opts)
+-- <C-p> project picker is defined in telescope.lua (mini.pick)
+vim.keymap.set("n", "<c-p>", function()
+  local ok, project_nvim = pcall(require, "project_nvim")
+  if not ok then return end
+  local projects = project_nvim.get_recent_projects()
+  local items = {}
+  for i = #projects, 1, -1 do
+    table.insert(items, projects[i])
+  end
+  require("mini.pick").start({
+    source = {
+      items  = items,
+      name   = "Projects",
+      choose = function(item)
+        vim.cmd("cd " .. vim.fn.fnameescape(item))
+        require("mini.pick").builtin.files()
+      end,
+    },
+  })
+end, { noremap = true, silent = true })

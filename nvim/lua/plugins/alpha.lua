@@ -17,12 +17,44 @@ starter.setup({
     [[                                                                                 ]],
   }, "\n"),
   items = {
-    { name = "f  Find file",           action = "Telescope find_files",  section = "Actions" },
-    { name = "e  New file",            action = "enew | startinsert",    section = "Actions" },
-    { name = "p  Find project",        action = "lua require('telescope').extensions.projects.projects()", section = "Actions" },
-    { name = "r  Recent files",        action = "Telescope oldfiles",    section = "Actions" },
-    { name = "t  Find text",           action = "Telescope live_grep",   section = "Actions" },
-    { name = "q  Quit Neovim",         action = "qa",                    section = "Actions" },
+    {
+      name    = "f  Find file",
+      action  = function() require("mini.pick").builtin.files() end,
+      section = "Actions",
+    },
+    { name = "e  New file", action = "enew | startinsert", section = "Actions" },
+    {
+      name    = "p  Find project",
+      action  = function()
+        local ok, proj = pcall(require, "project_nvim")
+        if not ok then return end
+        local projects = proj.get_recent_projects()
+        local items = {}
+        for i = #projects, 1, -1 do table.insert(items, projects[i]) end
+        require("mini.pick").start({
+          source = {
+            items  = items,
+            name   = "Projects",
+            choose = function(item)
+              vim.cmd("cd " .. vim.fn.fnameescape(item))
+              require("mini.pick").builtin.files()
+            end,
+          },
+        })
+      end,
+      section = "Actions",
+    },
+    {
+      name    = "r  Recent files",
+      action  = function() require("mini.extra").pickers.oldfiles() end,
+      section = "Actions",
+    },
+    {
+      name    = "t  Find text",
+      action  = function() require("mini.pick").builtin.grep_live() end,
+      section = "Actions",
+    },
+    { name = "q  Quit Neovim", action = "qa", section = "Actions" },
   },
   content_hooks = {
     starter.gen_hook.adding_bullet("  "),

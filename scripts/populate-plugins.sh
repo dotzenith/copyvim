@@ -51,8 +51,7 @@ clone_plugin "mini.nvim"                   "https://github.com/echasnovski/mini.
 clone_plugin "friendly-snippets"           "https://github.com/rafamadriz/friendly-snippets"                    "efff286dd74c22f731cdec26a70b46e5b203c619"
 
 # ── Navigation & Search ───────────────────────────────────────────────────────
-clone_plugin "telescope.nvim"              "https://github.com/nvim-telescope/telescope.nvim"                   "a4ed82509cecc56df1c7138920a1aeaf246c0ac5"
-clone_plugin "plenary.nvim"                "https://github.com/nvim-lua/plenary.nvim"                           "857c5ac632080dba10aae49dba902ce3abf91b35"
+# mini.pick + mini.extra (both from mini.nvim above) replace telescope.nvim + plenary.nvim
 clone_plugin "project.nvim"                "https://github.com/ahmedkhalf/project.nvim"                         "8c6bad7d22eef1b71144b401c9f74ed01526a4fb"
 
 # ── Formatting / Linting ──────────────────────────────────────────────────────
