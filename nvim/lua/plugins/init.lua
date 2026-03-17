@@ -1,10 +1,10 @@
 -- Load colorscheme first so all other UI elements inherit the right colors
 require("plugins.colorscheme")
 
--- Icons needed by lualine, telescope, alpha, etc.
+-- Icons needed by mini.statusline, telescope, mini.starter, etc.
 require("plugins.mini-icons")
 
--- which-key must come before gitsigns/telescope so key groups register first
+-- mini.clue must come before gitsigns/telescope so key groups register first
 require("plugins.whichkey")
 
 require("plugins.alpha")

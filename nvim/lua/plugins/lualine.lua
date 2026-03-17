@@ -1,152 +1,101 @@
-local function theme()
-  local colors = {
-    nobg = nil,
-    blue = "#87b0f9",
-    mauve = "#cba6f7",
-    red = "#f38ba8",
-    green = "#a6e3a1",
-    peach = "#fab387",
-    white = "#c6d0f5",
-    gray = "#a1a8c9",
-    black = "#1e1e2e",
-  }
-  return {
-    inactive = {
-      a = { fg = colors.blue, bg = colors.nobg, gui = "bold" },
-      b = { fg = colors.gray, bg = colors.nobg },
-      c = { fg = colors.gray, bg = colors.nobg },
-    },
-    visual = {
-      a = { fg = colors.black, bg = colors.mauve, gui = "bold" },
-      b = { fg = colors.mauve, bg = colors.nobg },
-      c = { fg = colors.white, bg = colors.nobg },
-    },
-    replace = {
-      a = { fg = colors.black, bg = colors.red, gui = "bold" },
-      b = { fg = colors.red, bg = colors.nobg },
-      c = { fg = colors.white, bg = colors.nobg },
-    },
-    normal = {
-      a = { fg = colors.black, bg = colors.blue, gui = "bold" },
-      b = { fg = colors.blue, bg = colors.nobg },
-      c = { fg = colors.white, bg = colors.nobg },
-    },
-    insert = {
-      a = { fg = colors.black, bg = colors.green, gui = "bold" },
-      b = { fg = colors.teal, bg = colors.nobg },
-      c = { fg = colors.white, bg = colors.nobg },
-    },
-    command = {
-      a = { fg = colors.black, bg = colors.peach, gui = "bold" },
-      b = { fg = colors.peach, bg = colors.nobg },
-      c = { fg = colors.white, bg = colors.nobg },
-    },
-  }
+-- Catppuccin Mocha palette (matching the old lualine custom theme)
+local colors = {
+  blue   = "#87b0f9",
+  mauve  = "#cba6f7",
+  red    = "#f38ba8",
+  green  = "#a6e3a1",
+  peach  = "#fab387",
+  white  = "#c6d0f5",
+  gray   = "#a1a8c9",
+  black  = "#1e1e2e",
+}
+
+-- Override mini.statusline highlight groups to match the old lualine theme
+local function set_highlights()
+  vim.api.nvim_set_hl(0, "MiniStatuslineModeNormal",  { fg = colors.black, bg = colors.blue,  bold = true })
+  vim.api.nvim_set_hl(0, "MiniStatuslineModeInsert",  { fg = colors.black, bg = colors.green, bold = true })
+  vim.api.nvim_set_hl(0, "MiniStatuslineModeVisual",  { fg = colors.black, bg = colors.mauve, bold = true })
+  vim.api.nvim_set_hl(0, "MiniStatuslineModeReplace", { fg = colors.black, bg = colors.red,   bold = true })
+  vim.api.nvim_set_hl(0, "MiniStatuslineModeCommand", { fg = colors.black, bg = colors.peach, bold = true })
+  vim.api.nvim_set_hl(0, "MiniStatuslineModeOther",   { fg = colors.black, bg = colors.peach, bold = true })
+  vim.api.nvim_set_hl(0, "MiniStatuslineDevinfo",     { fg = colors.blue,  bg = "NONE" })
+  vim.api.nvim_set_hl(0, "MiniStatuslineFilename",    { fg = colors.white, bg = "NONE" })
+  vim.api.nvim_set_hl(0, "MiniStatuslineFileinfo",    { fg = colors.gray,  bg = "NONE" })
+  vim.api.nvim_set_hl(0, "MiniStatuslineInactive",    { fg = colors.gray,  bg = "NONE" })
 end
 
-require("lsp-progress").setup({
-  decay = 1200,
-  series_format = function(title, message, percentage, done)
-    local builder = {}
-    local has_title = false
-    if type(title) == "string" and string.len(title) > 0 then
-      local modified_title = string.sub(title, 1, 50)
-      table.insert(builder, modified_title)
-      has_title = true
+set_highlights()
+-- Re-apply after colorscheme changes
+vim.api.nvim_create_autocmd("ColorScheme", { callback = set_highlights })
+
+-- Track LSP progress for display in statusline
+local lsp_progress_msg = ""
+vim.api.nvim_create_autocmd("LspProgress", {
+  callback = function(ev)
+    local value = ev.data and ev.data.params and ev.data.params.value
+    if not value then
+      lsp_progress_msg = ""
+      return
     end
-    if percentage and has_title then
-      table.insert(builder, string.format("(%.0f%%)", percentage))
-    end
-    return { msg = table.concat(builder, " "), done = done }
-  end,
-  client_format = function(client_name, spinner, series_messages)
-    if #series_messages == 0 then
-      return nil
-    end
-    local builder = {}
-    local done = true
-    for _, series in ipairs(series_messages) do
-      if not series.done then
-        done = false
+    if value.kind == "end" then
+      lsp_progress_msg = ""
+    elseif value.title then
+      local msg = string.sub(value.title, 1, 50)
+      if value.percentage then
+        msg = msg .. string.format(" (%.0f%%)", value.percentage)
       end
-      table.insert(builder, series.msg)
+      lsp_progress_msg = msg
     end
-    if done then
-      spinner = "✓"
-    end
-    return "["
-        .. client_name
-        .. "] "
-        .. spinner
-        .. " "
-        .. table.concat(builder, ", ")
+    vim.cmd("redrawstatus")
   end,
-  format = function(client_messages)
-    if #client_messages > 0 then
-      return table.concat(client_messages, " ")
-    end
-    return ""
-  end,
-  max_size = 80,
 })
-require("lualine").setup {
-  options = {
-    icons_enabled = true,
-    theme = theme(),
-    component_separators = '',
-    section_separators = '',
-    disabled_filetypes = { "alpha" },
-    always_divide_middle = true,
-    globalstatus = true
-  },
-  sections = {
-    lualine_a = { 'mode' },
-    lualine_b = { 'branch',
-      {
-        'diff',
-        colored = true,
-        diff_color = {
-          added    = 'DiffAdd',
-          modified = 'DiffChange',
-          removed  = 'DiffDelete',
-        },
-      },
-      {
-        'diagnostics',
 
-        sources = { 'nvim_lsp' },
-        sections = { 'error', 'warn', 'info' },
+require("mini.statusline").setup({
+  use_icons = true,
+  set_vim_settings = true,
 
-        diagnostics_color = {
-          error = 'DiagnosticError',
-          warn  = 'DiagnosticWarn',
-          info  = 'DiagnosticInfo',
-        },
-        colored = true,
-        update_in_insert = false,
-        always_visible = false,
-      },
-    },
-    lualine_c = { 'filename', '%=' },
-    lualine_x = { 'filetype' },
-    lualine_y = { require('lsp-progress').progress },
-    lualine_z = { 'location' }
+  content = {
+    active = function()
+      local MiniStatusline = require("mini.statusline")
+      local mode, mode_hl = MiniStatusline.section_mode({ trunc_width = 120 })
+      local git           = MiniStatusline.section_git({ trunc_width = 75 })
+      local diff          = MiniStatusline.section_diff({ trunc_width = 75 })
+      local diagnostics   = MiniStatusline.section_diagnostics({ trunc_width = 75 })
+      local filename      = MiniStatusline.section_filename({ trunc_width = 140 })
+      local fileinfo      = MiniStatusline.section_fileinfo({ trunc_width = 120 })
+      local location      = MiniStatusline.section_location({ trunc_width = 75 })
+      local lsp           = lsp_progress_msg ~= "" and lsp_progress_msg
+                            or MiniStatusline.section_lsp({ trunc_width = 75 })
+
+      return MiniStatusline.combine_groups({
+        { hl = mode_hl,                    strings = { mode } },
+        { hl = "MiniStatuslineDevinfo",    strings = { git, diff, diagnostics } },
+        "%<",
+        { hl = "MiniStatuslineFilename",   strings = { filename } },
+        "%=",
+        { hl = "MiniStatuslineFileinfo",   strings = { fileinfo } },
+        { hl = "MiniStatuslineDevinfo",    strings = { lsp } },
+        { hl = mode_hl,                    strings = { location } },
+      })
+    end,
+
+    inactive = function()
+      local MiniStatusline = require("mini.statusline")
+      local filename = MiniStatusline.section_filename({ trunc_width = 140 })
+      local location = MiniStatusline.section_location({ trunc_width = 999 })
+      return MiniStatusline.combine_groups({
+        { hl = "MiniStatuslineInactive", strings = { filename } },
+        "%=",
+        { hl = "MiniStatuslineInactive", strings = { location } },
+      })
+    end,
   },
-  inactive_sections = {
-    lualine_a = {},
-    lualine_b = {},
-    lualine_c = { 'filename' },
-    lualine_x = { 'location' },
-    lualine_y = {},
-    lualine_z = {}
-  },
-  tabline = {},
-  extensions = {}
-}
--- listen lsp-progress event and refresh lualine
-vim.api.nvim_create_augroup("lualine_augroup", { clear = true })
-vim.api.nvim_create_autocmd("User", {
-  group = "lualine_augroup",
-  pattern = "LspProgressStatusUpdated",
-  callback = require("lualine").refresh,
+})
+
+-- Don't show statusline on alpha/starter screen (handled in alpha.lua via autocmd)
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "ministarter" },
+  callback = function()
+    vim.b.ministatusline_disable = true
+  end,
 })
