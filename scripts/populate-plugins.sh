@@ -10,6 +10,23 @@ PACK_DIR="$REPO_ROOT/nvim/pack/bundled/start"
 
 mkdir -p "$PACK_DIR"
 
+# Languages to keep queries for. Edit this list to match what you use.
+KEEP_LANGS="html css c cpp bash javascript typescript lua vim regex rust python json haskell go typst yaml terraform hcl"
+
+# After cloning a plugin, remove every queries/<lang> dir not in KEEP_LANGS.
+prune_queries() {
+  local plugin_dir="$1"
+  local queries_dir="$plugin_dir/queries"
+  [ -d "$queries_dir" ] || return 0
+  for lang_dir in "$queries_dir"/*/; do
+    local lang
+    lang="$(basename "$lang_dir")"
+    if ! echo " $KEEP_LANGS " | grep -q " $lang "; then
+      rm -rf "$lang_dir"
+    fi
+  done
+}
+
 clone_plugin() {
   local name="$1"
   local url="$2"
@@ -59,6 +76,9 @@ clone_plugin "none-ls.nvim"                "https://github.com/nvimtools/none-ls
 
 # ── Syntax ───────────────────────────────────────────────────────────────────
 clone_plugin "nvim-treesitter"             "https://github.com/nvim-treesitter/nvim-treesitter"                 "30654ee72a69e7c76a54b66d748dae088429e863"
+prune_queries "$PACK_DIR/nvim-treesitter"
+clone_plugin "nvim-treesitter-textobjects" "https://github.com/nvim-treesitter/nvim-treesitter-textobjects"     "9937e5e356e5b227ec56d83d0a9d0a0f6bc9cad4"
+prune_queries "$PACK_DIR/nvim-treesitter-textobjects"
 clone_plugin "rainbow-delimiters.nvim"     "https://github.com/HiPhish/rainbow-delimiters.nvim"                 "97bf4b8ef9298644a29fcd9dd41a0210cf08cac7"
 
 # ── LSP helpers ───────────────────────────────────────────────────────────────
