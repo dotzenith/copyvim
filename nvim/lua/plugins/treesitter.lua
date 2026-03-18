@@ -17,24 +17,30 @@ require("nvim-treesitter.configs").setup({
     extended_mode = true,
     max_file_lines = nil,
   },
-})
-
--- mini.ai: enhanced text objects with TreeSitter support
--- Replaces nvim-treesitter-textobjects text object selection
-local spec_ts = require("mini.ai").gen_spec.treesitter
-
-require("mini.ai").setup({
-  n_lines = 500,
-  custom_textobjects = {
-    -- function
-    f = spec_ts({ a = "@function.outer", i = "@function.inner" }),
-    -- call
-    c = spec_ts({ a = "@call.outer",     i = "@call.inner" }),
-    -- conditional
-    i = spec_ts({ a = "@conditional.outer", i = "@conditional.inner" }),
-    -- loop
-    l = spec_ts({ a = "@loop.outer",     i = "@loop.inner" }),
-    -- parameter
-    p = spec_ts({ a = "@parameter.outer", i = "@parameter.inner" }),
+  textobjects = {
+    select = {
+      enable = true,
+      lookahead = true,
+      keymaps = {
+        ["af"] = "@function.outer",
+        ["if"] = "@function.inner",
+        ["ac"] = "@call.outer",
+        ["ic"] = "@call.inner",
+        ["ai"] = "@conditional.outer",
+        ["ii"] = "@conditional.inner",
+        ["al"] = "@loop.outer",
+        ["il"] = "@loop.inner",
+        ["ap"] = "@parameter.outer",
+        ["ip"] = "@parameter.inner",
+      },
+    },
+    move = {
+      enable = true,
+      set_jumps = true,
+      goto_next_start     = { ["]f"] = "@function.outer", ["]c"] = "@call.outer" },
+      goto_next_end       = { ["]F"] = "@function.outer", ["]C"] = "@call.outer" },
+      goto_previous_start = { ["[f"] = "@function.outer", ["[c"] = "@call.outer" },
+      goto_previous_end   = { ["[F"] = "@function.outer", ["[C"] = "@call.outer" },
+    },
   },
 })
