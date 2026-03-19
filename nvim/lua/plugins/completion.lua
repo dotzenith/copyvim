@@ -12,16 +12,29 @@ require("mini.completion").setup({
 -- Set completefunc to mini.completion's LSP handler
 vim.o.completefunc = "v:lua.MiniCompletion.completefunc_lsp"
 
-local function pum_key(pum_key, fallback_key)
-  return function()
-    local key = vim.fn.pumvisible() ~= 0 and pum_key or fallback_key
-    return vim.api.nvim_replace_termcodes(key, true, false, true)
+-- Recommended CR action from mini.completion docs:
+-- confirm with <C-y> if an item is selected, otherwise dismiss pum and newline
+local keycode = vim.keycode or function(x)
+  return vim.api.nvim_replace_termcodes(x, true, true, true)
+end
+local keys = {
+  cr        = keycode("<CR>"),
+  ctrl_y    = keycode("<C-y>"),
+  ctrl_y_cr = keycode("<C-y><CR>"),
+}
+
+_G.cr_action = function()
+  if vim.fn.pumvisible() ~= 0 then
+    local item_selected = vim.fn.complete_info()["selected"] ~= -1
+    return item_selected and keys.ctrl_y or keys.ctrl_y_cr
+  else
+    return keys.cr
   end
 end
 
 -- Tab / S-Tab to cycle through popup menu entries
-vim.keymap.set("i", "<Tab>",   pum_key("<C-n>", "<Tab>"),   { expr = true, noremap = true })
-vim.keymap.set("i", "<S-Tab>", pum_key("<C-p>", "<S-Tab>"), { expr = true, noremap = true })
-vim.keymap.set("i", "<C-j>",   pum_key("<C-n>", "<C-j>"),   { expr = true, noremap = true })
-vim.keymap.set("i", "<C-k>",   pum_key("<C-p>", "<C-k>"),   { expr = true, noremap = true })
-vim.keymap.set("i", "<CR>",    pum_key("<C-y>", "<CR>"),    { expr = true, noremap = true })
+vim.keymap.set("i", "<Tab>",   [[pumvisible() ? "\<C-n>" : "\<Tab>"]],   { expr = true })
+vim.keymap.set("i", "<S-Tab>", [[pumvisible() ? "\<C-p>" : "\<S-Tab>"]], { expr = true })
+vim.keymap.set("i", "<C-j>",   [[pumvisible() ? "\<C-n>" : "\<C-j>"]],   { expr = true })
+vim.keymap.set("i", "<C-k>",   [[pumvisible() ? "\<C-p>" : "\<C-k>"]],   { expr = true })
+vim.keymap.set("i", "<CR>",    "v:lua._G.cr_action()",                   { expr = true })
