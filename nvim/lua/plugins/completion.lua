@@ -1,39 +1,51 @@
-require("mini.completion").setup({
-  lsp_completion = {
-    source_func = "completefunc",
-    auto_setup = false,
-  },
-  window = {
-    info      = { height = 25, width = 80, border = "rounded" },
-    signature = { height = 25, width = 80, border = "rounded" },
-  },
+local cmp = require("cmp")
+local luasnip = require("luasnip")
+
+-- Load friendly-snippets
+require("luasnip.loaders.from_vscode").lazy_load()
+
+-- Advertise nvim-cmp capabilities to all LSP servers.
+-- vim.lsp.enable() starts servers lazily on buffer open, so this runs first.
+vim.lsp.config("*", {
+  capabilities = require("cmp_nvim_lsp").default_capabilities(),
 })
 
--- Set completefunc to mini.completion's LSP handler
-vim.o.completefunc = "v:lua.MiniCompletion.completefunc_lsp"
-
--- Recommended CR action from mini.completion docs:
--- confirm with <C-y> if an item is selected, otherwise fall through to mini.pairs
-local keycode = vim.keycode or function(x)
-  return vim.api.nvim_replace_termcodes(x, true, true, true)
-end
-local keys = {
-  ctrl_y    = keycode("<C-y>"),
-  ctrl_y_cr = keycode("<C-y><CR>"),
-}
-
--- Tab / S-Tab to cycle through popup menu entries
-vim.keymap.set("i", "<Tab>",   [[pumvisible() ? "\<C-n>" : "\<Tab>"]],   { expr = true })
-vim.keymap.set("i", "<S-Tab>", [[pumvisible() ? "\<C-p>" : "\<S-Tab>"]], { expr = true })
-vim.keymap.set("i", "<C-j>",   [[pumvisible() ? "\<C-n>" : "\<C-j>"]],   { expr = true })
-vim.keymap.set("i", "<C-k>",   [[pumvisible() ? "\<C-p>" : "\<C-k>"]],   { expr = true })
--- replace_keycodes = false required when returning raw bytes from nvim_replace_termcodes
--- (matches how mini.pairs sets up its own <CR> mapping)
-vim.keymap.set("i", "<CR>", function()
-  if vim.fn.pumvisible() ~= 0 then
-    local item_selected = vim.fn.complete_info()["selected"] ~= -1
-    return item_selected and keys.ctrl_y or keys.ctrl_y_cr
-  else
-    return require("mini.pairs").cr()
-  end
-end, { expr = true, replace_keycodes = false })
+cmp.setup({
+  snippet = {
+    expand = function(args)
+      luasnip.lsp_expand(args.body)
+    end,
+  },
+  window = {
+    completion    = cmp.config.window.bordered(),
+    documentation = cmp.config.window.bordered(),
+  },
+  mapping = cmp.mapping.preset.insert({
+    ["<Tab>"] = cmp.mapping(function(fallback)
+      if cmp.visible() then
+        cmp.select_next_item()
+      elseif luasnip.expand_or_jumpable() then
+        luasnip.expand_or_jump()
+      else
+        fallback()
+      end
+    end, { "i", "s" }),
+    ["<S-Tab>"] = cmp.mapping(function(fallback)
+      if cmp.visible() then
+        cmp.select_prev_item()
+      elseif luasnip.jumpable(-1) then
+        luasnip.jump(-1)
+      else
+        fallback()
+      end
+    end, { "i", "s" }),
+    ["<C-j>"] = cmp.mapping.select_next_item(),
+    ["<C-k>"] = cmp.mapping.select_prev_item(),
+    -- select = false: only confirm an explicitly selected item, never auto-select
+    ["<CR>"] = cmp.mapping.confirm({ select = false }),
+  }),
+  sources = cmp.config.sources(
+    { { name = "nvim_lsp" }, { name = "luasnip" } },
+    { { name = "buffer" },   { name = "path" } }
+  ),
+})

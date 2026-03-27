@@ -55,6 +55,7 @@ require("catppuccin").setup(
       leap = true,
       rainbow_delimiters = true,
       lualine = false,
+      cmp = true,
     },
     color_overrides = {
         mocha = {
